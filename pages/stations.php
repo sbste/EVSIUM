@@ -79,7 +79,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                         // Get charging points for this station
                         $chargingPoints = getStationChargingPoints($station['station_id']);
                         $availablePoints = array_filter($chargingPoints, function($point) {
-                            return $point['occupied'] === 'available';
+                            return $point['status'] === 'available';
                         });
                         $availableCount = count($availablePoints);
                         $totalCount = count($chargingPoints);
@@ -101,13 +101,13 @@ require_once dirname(__DIR__) . '/includes/header.php';
                             <h4>Charging Points</h4>
                             <div class="points-grid">
                                 <?php foreach ($chargingPoints as $point): ?>
-                                    <div class="point-item <?= $point['occupied'] ?>">
+                                    <div class="point-item <?= $point['status'] ?>">
                                         <div class="point-status">
                                             <span class="status-dot"></span>
-                                            <?= ucfirst($point['occupied']) ?>
+                                            <?= ucfirst($point['status']) ?>
                                         </div>
                                         <div class="point-info">
-                                            Point #<?= $point['occupied'] ?>
+                                            Point #<?= $point['charging_point_id'] ?>
                                             (<?= $point['slots_num'] ?> slots)
                                         </div>
                                     </div>
@@ -240,8 +240,8 @@ require_once dirname(__DIR__) . '/includes/header.php';
             color: var(--white);
         }
 
-        .point-item.reserved {
-            background-color: var(--warning);
+        .point-item.not-available {
+            background-color: var(--error);
             color: var(--white);
         }
 

@@ -31,7 +31,13 @@ function getStationDetails($stationId) {
  * @return array Array of charging points
  */
 function getStationChargingPoints($stationId) {
-    $sql = "SELECT * FROM Charging_Points WHERE station_id = ?";
+    $sql = "SELECT *, 
+            CASE 
+                WHEN occupied = 0 THEN 'available'
+                WHEN occupied = 1 THEN 'not-available'
+            END as status
+            FROM Charging_Points 
+            WHERE station_id = ?";
     return fetchAll($sql, [$stationId]);
 }
 
@@ -48,7 +54,11 @@ function getChargingPointDetails($chargingPointId) {
                    s.address_city,
                    s.address_municipality, 
                    s.address_civic_num, 
-                   s.address_zipcode
+                   s.address_zipcode,
+                   CASE 
+                       WHEN cp.occupied = 0 THEN 'available'
+                       WHEN cp.occupied = 1 THEN 'not-available'
+                   END as status
             FROM Charging_Points cp
             JOIN Stations s ON cp.station_id = s.station_id
             WHERE cp.charging_point_id = ?";
@@ -64,6 +74,6 @@ function getChargingPointDetails($chargingPointId) {
  */
 function getAvailableChargingPoints($stationId) {
     $sql = "SELECT * FROM Charging_Points 
-            WHERE station_id = ? AND charging_point_state = 'available'";
+            WHERE station_id = ? AND occupied = 0";
     return fetchAll($sql, [$stationId]);
 }
