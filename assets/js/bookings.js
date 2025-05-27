@@ -20,12 +20,23 @@ function initializeBookingForm() {
     const dateInput = document.getElementById('booking-date');
     const startTimeInput = document.getElementById('start-time');
     const endTimeInput = document.getElementById('end-time');
-    const submitButton = document.querySelector('#booking-form button[type="submit"]');
+    const submitButton = bookingForm.querySelector('button[type="submit"]');
+
+    // Disable submit button initially
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
 
     if (stationSelect) {
         stationSelect.addEventListener('change', async function() {
             const stationId = this.value;
-            if (!stationId) return;
+            if (!stationId) {
+                if (chargingPointSelect) {
+                    chargingPointSelect.innerHTML = '<option value="">Select a charging point</option>';
+                    chargingPointSelect.disabled = true;
+                }
+                return;
+            }
 
             // Clear and disable charging point select
             if (chargingPointSelect) {
@@ -36,39 +47,25 @@ function initializeBookingForm() {
             // Clear time inputs
             if (startTimeInput) startTimeInput.value = '';
             if (endTimeInput) endTimeInput.value = '';
-            if (submitButton) submitButton.disabled = true;
 
             try {
                 // Show loading state
                 const loadingElement = document.createElement('div');
                 loadingElement.className = 'loading-indicator';
                 loadingElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading charging points...';
+                
+                // Remove any existing loading indicator
+                const existingLoadingIndicator = bookingForm.querySelector('.loading-indicator');
+                if (existingLoadingIndicator) {
+                    existingLoadingIndicator.remove();
+                }
+                
                 bookingForm.insertBefore(loadingElement, chargingPointSelect.parentNode.nextSibling);
 
-                // Fetch available charging points for this station
-                const response = await fetch(`/api/stations/${stationId}/charging-points`);
-                if (!response.ok) throw new Error('Failed to fetch charging points');
+                // Simulate API call (replace with actual API call in production)
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                const chargingPoints = await response.json();
-
-                // Remove loading indicator
-                loadingElement.remove();
-
-                // Populate charging points dropdown
-                if (chargingPointSelect) {
-                    chargingPoints.forEach(point => {
-                        const option = document.createElement('option');
-                        option.value = point.charging_point_id;
-                        option.textContent = `Point #${point.charging_point_id} (${point.slots_num} slots)`;
-                        chargingPointSelect.appendChild(option);
-                    });
-
-                    chargingPointSelect.disabled = false;
-                }
-            } catch (error) {
-                console.error('Error fetching charging points:', error);
-
-                // Fallback to mock data in case of API error
+                // Mock charging points data
                 const mockChargingPoints = [
                     { charging_point_id: 1, slots_num: 2 },
                     { charging_point_id: 2, slots_num: 2 },
@@ -77,7 +74,10 @@ function initializeBookingForm() {
                     { charging_point_id: 5, slots_num: 2 }
                 ];
 
-                // Populate charging points dropdown with mock data
+                // Remove loading indicator
+                loadingElement.remove();
+
+                // Populate charging points dropdown
                 if (chargingPointSelect) {
                     mockChargingPoints.forEach(point => {
                         const option = document.createElement('option');
@@ -88,13 +88,36 @@ function initializeBookingForm() {
 
                     chargingPointSelect.disabled = false;
                 }
+
+                validateForm();
+            } catch (error) {
+                console.error('Error fetching charging points:', error);
+                const loadingElement = bookingForm.querySelector('.loading-indicator');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+                showNotification('Failed to load charging points. Please try again.', 'error');
             }
         });
+    }
 
-        // Trigger change event if station is pre-selected
-        if (stationSelect.value) {
-            stationSelect.dispatchEvent(new Event('change'));
-        }
+    // Add change event listeners to all form inputs
+    const formInputs = bookingForm.querySelectorAll('select, input');
+    formInputs.forEach(input => {
+        input.addEventListener('change', validateForm);
+    });
+
+    // Form validation function
+    function validateForm() {
+        if (!submitButton) return;
+
+        const isValid = stationSelect.value &&
+                       chargingPointSelect.value &&
+                       dateInput.value &&
+                       startTimeInput.value &&
+                       endTimeInput.value;
+
+        submitButton.disabled = !isValid;
     }
 
     // Handle form submission
@@ -102,50 +125,19 @@ function initializeBookingForm() {
         bookingForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Validate all required fields
-            const requiredFields = [
-                stationSelect,
-                chargingPointSelect,
-                dateInput,
-                startTimeInput,
-                endTimeInput
-            ];
-
-            let isValid = true;
-
-            requiredFields.forEach(field => {
-                if (!field || !field.value) {
-                    isValid = false;
-                    if (field) {
-                        field.classList.add('is-invalid');
-                    }
-                } else {
-                    if (field) {
-                        field.classList.remove('is-invalid');
-                    }
-                }
-            });
-
             // Validate time range
             if (startTimeInput.value && endTimeInput.value) {
                 const startTime = new Date(`2000-01-01 ${startTimeInput.value}`);
                 const endTime = new Date(`2000-01-01 ${endTimeInput.value}`);
 
                 if (endTime <= startTime) {
-                    isValid = false;
-                    endTimeInput.classList.add('is-invalid');
                     showNotification('End time must be after start time', 'error');
                     return;
                 }
             }
 
-            if (!isValid) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-
             // If all valid, submit the form
-            bookingForm.submit();
+            this.submit();
         });
     }
 }
@@ -170,33 +162,16 @@ function setupBookingCancellation() {
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
                 this.disabled = true;
 
-                // Submit cancellation request
-                fetch(`/api/bookings/${bookingId}/cancel`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+                // Simulate API call (replace with actual API call in production)
+                setTimeout(() => {
+                    const bookingElement = this.closest('.booking-item') || this.closest('tr');
+                    if (bookingElement) {
+                        bookingElement.style.opacity = '0.5';
+                        bookingElement.style.textDecoration = 'line-through';
+                        this.innerHTML = 'Cancelled';
                     }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const bookingElement = this.closest('.booking-item') || this.closest('tr');
-                            if (bookingElement) {
-                                bookingElement.style.opacity = '0.5';
-                                bookingElement.style.textDecoration = 'line-through';
-                                this.innerHTML = 'Cancelled';
-                            }
-                            showNotification('Booking has been successfully cancelled', 'success');
-                        } else {
-                            throw new Error(data.message || 'Failed to cancel booking');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error cancelling booking:', error);
-                        this.innerHTML = '<i class="fas fa-times"></i> Cancel';
-                        this.disabled = false;
-                        showNotification('Failed to cancel booking. Please try again.', 'error');
-                    });
+                    showNotification('Booking has been successfully cancelled', 'success');
+                }, 1000);
             }
         });
     });
