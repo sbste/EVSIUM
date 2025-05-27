@@ -79,7 +79,7 @@ require_once dirname(__DIR__) . '/includes/header.php';
                         // Get charging points for this station
                         $chargingPoints = getStationChargingPoints($station['station_id']);
                         $availablePoints = array_filter($chargingPoints, function($point) {
-                            return $point['charging_point_state'] === 'available';
+                            return $point['occupied'] === 'available';
                         });
                         $availableCount = count($availablePoints);
                         $totalCount = count($chargingPoints);
@@ -101,13 +101,13 @@ require_once dirname(__DIR__) . '/includes/header.php';
                             <h4>Charging Points</h4>
                             <div class="points-grid">
                                 <?php foreach ($chargingPoints as $point): ?>
-                                    <div class="point-item <?= $point['charging_point_state'] ?>">
+                                    <div class="point-item <?= $point['occupied'] ?>">
                                         <div class="point-status">
                                             <span class="status-dot"></span>
-                                            <?= ucfirst($point['charging_point_state']) ?>
+                                            <?= ucfirst($point['occupied']) ?>
                                         </div>
                                         <div class="point-info">
-                                            Point #<?= $point['charging_point_id'] ?>
+                                            Point #<?= $point['occupied'] ?>
                                             (<?= $point['slots_num'] ?> slots)
                                         </div>
                                     </div>
